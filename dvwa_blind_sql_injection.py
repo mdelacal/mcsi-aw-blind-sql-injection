@@ -22,19 +22,20 @@ from bs4 import BeautifulSoup
 #########################################################################
 
 def init_variables():
-    # Establecemos las cookies necesarias para realizar las peticiones
-    dvwa_security_level = "low"
-    phpsessid = "ac78ec305ec9d8f5202b91a82f9de68f"
-    cookies = {'security': dvwa_security_level, 'PHPSESSID': phpsessid}
 
     # Comprobamos el número de argumentos de la línea de comandos
-    if len(sys.argv) != 3:
-        print(f'\033[91m\n[ERROR] Usage: python3 dvwa_sqli_blind_text.py <URL> <PARAMETER>\033[0m\n')
+    if len(sys.argv) != 4:
+        print(f'\033[91m\n[ERROR] USAGE: $ python3 dvwa_sqli_blind_text.py <URL> <PARAMETER> <PHPSESSID>\033[0m\n')
         sys.exit(2)
     else:
         base_url = sys.argv[1]
         base_url += "?" + sys.argv[2] + "="
         print(f'\n[INFO] La dirección URL base es: {base_url}')
+
+        # Establecemos las cookies necesarias para realizar las peticiones
+        dvwa_security_level = "low"
+        phpsessid = sys.argv[3]
+        cookies = {'security': dvwa_security_level, 'PHPSESSID': phpsessid}        
 
     return base_url, cookies
 

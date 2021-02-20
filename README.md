@@ -1,3 +1,5 @@
+## DVWA Auto Blind SQL Injection
+
 ### Información del proyecto
 Autor: Miguel de la Cal Bravo
 
@@ -25,7 +27,7 @@ Este script ha sido diseñado para ser ejecutado contra la aplicación **DVWA** 
 ### 1. Ejecución por línea de comandos
 Para ejecutar el script, introduciremos el siguiente comando por la línea de comandos:
 ```
-$ python3 dvwa_blind_sql_injection.py <URL> <PARAMETER>
+$ python3 dvwa_blind_sql_injection.py <URL> <PARAMETER> <PHPSESSID>
 ```
 
 ### 2. Menú del script
@@ -35,5 +37,5 @@ Tenemos las siguientes opciones dentro del menú:
 - **[1] Calcular el nº total de bases de datos**
 - **[2] Calcular el nº de caracteres de cada una de las bases de datos**
 - **[3] Identificar carácter a carácter el nombre de cada una de las bases de datos**
-- [4] Lanzar petición personalizada (en desarrollo)
+- [4] Lanzar petición personalizada (experimental)
 - [5] Salir del programa
