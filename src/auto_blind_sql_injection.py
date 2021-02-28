@@ -196,6 +196,9 @@ def paso_3(total_databases, total_characters_per_db):
     print(f'\n[INFO] Paso 3 completado satisfactoriamente')
     return database_names_list
 
+##################################################################################
+# FUNCIÓN EXPERIMENTAL: Lanzar consultas personalizadas sobre la aplicación DVWA # 
+##################################################################################
 
 def lanzar_consulta():
     print(f'\n[INFO] La dirección URL base es: {base_url}')
